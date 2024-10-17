@@ -16,8 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class CandidateControllerTest {
@@ -31,7 +30,7 @@ public class CandidateControllerTest {
     @Test
     void testGetAllCandidates() {
         // Configuración
-        List<Candidates> candidates = List.of(new Candidates(1L,"cesar fernandez", "cesarfdperu@gmail.com", "Male", 50000.0, "Developer", "Active"));
+        List<Candidates> candidates = List.of(new Candidates(1L, "cesar fernandez", "cesarfdperu@gmail.com", "Male", 50000.0, "Developer", "Active"));
         when(candidateService.getAllCandidates()).thenReturn(candidates);
 
         // Ejecución
@@ -40,6 +39,11 @@ public class CandidateControllerTest {
         // Verificación
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(candidates, response.getBody());
+
+        // Error Handling
+        when(candidateService.getAllCandidates()).thenThrow(new RuntimeException("Internal Server Error"));
+        ResponseEntity<List<Candidates>> errorResponse = candidateController.getAllCandidates();
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, errorResponse.getStatusCode());
     }
 
     @Test
@@ -54,6 +58,11 @@ public class CandidateControllerTest {
         // Verificación
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(candidate, response.getBody());
+
+        // Error Handling
+        when(candidateService.getCandidateById(1L)).thenReturn(Optional.empty());
+        ResponseEntity<Candidates> errorResponse = candidateController.getCandidateById(1L);
+        assertEquals(HttpStatus.NOT_FOUND, errorResponse.getStatusCode());
     }
 
     @Test
@@ -68,8 +77,12 @@ public class CandidateControllerTest {
         // Verificación
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(candidate, response.getBody());
-    }
 
+        // Error Handling
+        when(candidateService.createCandidate(any(Candidates.class))).thenThrow(new RuntimeException("Internal Server Error"));
+        ResponseEntity<Candidates> errorResponse = candidateController.createCandidate(candidate);
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, errorResponse.getStatusCode());
+    }
     @Test
     void testDeleteCandidate() {
         // Configuración
@@ -79,5 +92,10 @@ public class CandidateControllerTest {
 
         // Verificación
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+
+        // Error Handling
+        doThrow(new RuntimeException("Not Found")).when(candidateService).deleteCandidate(1L);
+        ResponseEntity<Void> errorResponse = candidateController.deleteCandidate(1L);
+        assertEquals(HttpStatus.NOT_FOUND, errorResponse.getStatusCode());
     }
 }
